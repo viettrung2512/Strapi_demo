@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "product_details",
+  "info": {
+    "singularName": "product-detail",
+    "pluralName": "product-details",
+    "displayName": "Product detail"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Picture": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "Quantity": {
+      "type": "integer"
+    },
+    "Save": {
+      "type": "boolean"
+    }
+  }
+}

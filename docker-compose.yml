@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: strapi-postgres-18
+    environment:
+      POSTGRES_DB: strapi_db
+      POSTGRES_USER: strapi_user
+      POSTGRES_PASSWORD: strapi_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strapi_user -d strapi_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
