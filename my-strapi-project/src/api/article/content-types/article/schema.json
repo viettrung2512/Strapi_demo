@@ -33,7 +33,16 @@
       "type": "boolean"
     },
     "content": {
-      "type": "richtext"
+      "type": "customField",
+      "customField": "plugin::ckeditor5.CKEditor",
+      "options": {
+        "preset": "defaultHtml"
+      }
+    },
+    "seo": {
+      "type": "component",
+      "component": "seo-component.seo-article",
+      "repeatable": false
     }
   }
 }

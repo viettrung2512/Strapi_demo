@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_seo_component_seo_articles",
+  "info": {
+    "displayName": "SEOArticle",
+    "icon": "eye"
+  },
+  "options": {},
+  "attributes": {
+    "metaTitle": {
+      "type": "string"
+    },
+    "metaDescription": {
+      "type": "customField",
+      "customField": "plugin::ckeditor5.CKEditor",
+      "options": {
+        "preset": "defaultHtml"
+      }
+    }
+  },
+  "config": {}
+}
