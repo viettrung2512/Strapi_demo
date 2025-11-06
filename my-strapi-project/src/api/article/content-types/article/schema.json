@@ -21,12 +21,7 @@
     "image": {
       "type": "media",
       "multiple": false,
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ]
+      "allowedTypes": ["images", "files", "videos", "audios"]
     },
     "categories": {
       "type": "relation",
@@ -38,11 +33,7 @@
       "type": "boolean"
     },
     "content": {
-      "type": "customField",
-      "customField": "plugin::ckeditor5.CKEditor",
-      "options": {
-        "preset": "defaultHtml"
-      }
+      "type": "richtext"
     }
   }
 }

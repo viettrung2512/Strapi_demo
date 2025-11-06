@@ -1,21 +1,22 @@
+version: '3.8'
 services:
   postgres:
-    image: postgres:18
-    container_name: strapi-postgres-18
+    image: postgres:13
+    container_name: strapi_postgres
     environment:
-      POSTGRES_DB: strapi_db
-      POSTGRES_USER: strapi_user
-      POSTGRES_PASSWORD: strapi_password
+      POSTGRES_DB: strapi_db           # ← DATABASE_NAME từ env của bạn
+      POSTGRES_USER: postgres          # ← DATABASE_USERNAME từ env  
+      POSTGRES_PASSWORD: Vvvv1111      # ← DATABASE_PASSWORD từ env
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U strapi_user -d strapi_db"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - strapi_network
 
 volumes:
   postgres_data:
+
+networks:
+  strapi_network:
+    driver: bridge
