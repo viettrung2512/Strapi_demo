@@ -1,37 +1,36 @@
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 module.exports = (plugin) => {
-  
   // Override forgot password controller với email template có button
   plugin.controllers.auth.forgotPassword = async (ctx) => {
     const { email } = ctx.request.body;
-    
-    console.log('🎯 FORGOT PASSWORD REQUEST FOR:', email);
-    
+
+    console.log("🎯 FORGOT PASSWORD REQUEST FOR:", email);
+
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     // Find user
-    const user = await strapi.query('plugin::users-permissions.user').findOne({
+    const user = await strapi.query("plugin::users-permissions.user").findOne({
       where: { email: normalizedEmail },
     });
 
     if (!user || user.blocked) {
-      console.log('❌ USER NOT FOUND OR BLOCKED:', normalizedEmail);
-      return ctx.send({ 
-        ok: true, 
-        message: 'Nếu email tồn tại, reset link đã được gửi' 
+      console.log("❌ USER NOT FOUND OR BLOCKED:", normalizedEmail);
+      return ctx.send({
+        ok: true,
+        message: "Nếu email tồn tại, reset link đã được gửi",
       });
     }
 
-    console.log('✅ USER FOUND:', user.id, user.username);
+    console.log("✅ USER FOUND:", user.id, user.username);
 
     // Generate reset token
-    const resetPasswordToken = crypto.randomBytes(32).toString('hex');
-    const resetPasswordUrl = `${process.env.PUBLIC_URL || 'http://localhost:5173'}/reset-password?code=${resetPasswordToken}`;
+    const resetPasswordToken = crypto.randomBytes(32).toString("hex");
+    const resetPasswordUrl = `${process.env.PUBLIC_URL || "http://localhost:5173"}/reset-password?code=${resetPasswordToken}`;
 
     // Update user
-    await strapi.query('plugin::users-permissions.user').update({
+    await strapi.query("plugin::users-permissions.user").update({
       where: { id: user.id },
       data: { resetPasswordToken },
     });
@@ -128,7 +127,7 @@ module.exports = (plugin) => {
                 <strong>Thông tin yêu cầu:</strong><br>
                 Tài khoản: <strong>${user.username}</strong><br>
                 Email: <strong>${normalizedEmail}</strong><br>
-                Thời gian: <strong>${new Date().toLocaleString('vi-VN')}</strong>
+                Thời gian: <strong>${new Date().toLocaleString("vi-VN")}</strong>
             </div>
             
             <p>Xin chào <strong>${user.username}</strong>,</p>
@@ -163,25 +162,24 @@ module.exports = (plugin) => {
 </html>
       `;
 
-      await strapi.plugin('email').service('email').send({
+      await strapi.plugin("email").service("email").send({
         to: normalizedEmail,
         from: '"KIMEI Support" <vtrung2512@gmail.com>',
-        subject: '🔐 Đặt Lại Mật Khẩu - KIMEI',
-        html: emailHtml
+        subject: "🔐 Đặt Lại Mật Khẩu - KIMEI",
+        html: emailHtml,
       });
 
-      console.log('✅ EMAIL WITH BUTTON SENT TO:', normalizedEmail);
-      
+      console.log("✅ EMAIL WITH BUTTON SENT TO:", normalizedEmail);
+
       return ctx.send({
         ok: true,
-        message: 'Email reset đã được gửi'
+        message: "Email reset đã được gửi",
       });
-      
     } catch (emailError) {
-      console.error('❌ EMAIL SEND ERROR:', emailError);
-      return ctx.send({ 
-        ok: true, 
-        message: 'Yêu cầu đã được xử lý' 
+      console.error("❌ EMAIL SEND ERROR:", emailError);
+      return ctx.send({
+        ok: true,
+        message: "Yêu cầu đã được xử lý",
       });
     }
   };
@@ -189,43 +187,48 @@ module.exports = (plugin) => {
   // Override reset password controller (giữ nguyên)
   plugin.controllers.auth.resetPassword = async (ctx) => {
     const { code, password, passwordConfirmation } = ctx.request.body;
-    
-    console.log('🔄 RESET PASSWORD REQUEST');
 
-    const user = await strapi.query('plugin::users-permissions.user').findOne({
+    console.log("🔄 RESET PASSWORD REQUEST");
+
+    const user = await strapi.query("plugin::users-permissions.user").findOne({
       where: { resetPasswordToken: code },
     });
 
     if (!user) {
-      console.log('❌ INVALID RESET TOKEN');
-      return ctx.badRequest(null, 'Reset token không hợp lệ hoặc đã hết hạn');
+      console.log("❌ INVALID RESET TOKEN");
+      return ctx.badRequest(null, "Reset token không hợp lệ hoặc đã hết hạn");
     }
 
     // Check if new password is same as old password
     const isSamePassword = await bcrypt.compare(password, user.password);
     if (isSamePassword) {
-      console.log('❌ NEW PASSWORD SAME AS OLD PASSWORD');
-      return ctx.badRequest(null, 'Mật khẩu mới không được trùng với mật khẩu cũ');
+      console.log("❌ NEW PASSWORD SAME AS OLD PASSWORD");
+      return ctx.badRequest(
+        null,
+        "Mật khẩu mới không được trùng với mật khẩu cũ"
+      );
     }
 
     if (password !== passwordConfirmation) {
-      return ctx.badRequest(null, 'Mật khẩu xác nhận không khớp');
+      return ctx.badRequest(null, "Mật khẩu xác nhận không khớp");
     }
 
     // Update user password and clear reset token
-    await strapi.query('plugin::users-permissions.user').update({
+    await strapi.query("plugin::users-permissions.user").update({
       where: { id: user.id },
       data: {
-        password: await strapi.service('plugin::users-permissions.user').hashPassword({ password }),
+        password: await strapi
+          .service("plugin::users-permissions.user")
+          .hashPassword({ password }),
         resetPasswordToken: null,
       },
     });
 
-    console.log('✅ PASSWORD RESET SUCCESS FOR USER:', user.id);
-    
+    console.log("✅ PASSWORD RESET SUCCESS FOR USER:", user.id);
+
     return ctx.send({
       ok: true,
-      message: 'Mật khẩu đã được đổi thành công'
+      message: "Mật khẩu đã được đổi thành công",
     });
   };
 
