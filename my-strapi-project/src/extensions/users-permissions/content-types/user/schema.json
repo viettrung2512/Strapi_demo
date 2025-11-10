@@ -16,7 +16,7 @@
     "username": {
       "type": "string",
       "minLength": 3,
-      "unique": false,
+      "unique": true,
       "configurable": false,
       "required": true
     },
@@ -69,12 +69,7 @@
     "avatar": {
       "type": "media",
       "multiple": false,
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ]
+      "allowedTypes": ["images", "files", "videos", "audios"]
     }
   }
 }
