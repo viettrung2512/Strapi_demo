@@ -1,8 +1,28 @@
+import * as admin from "firebase-admin";
+
+// Hàm helper để lấy ID user từ questionEntry
+const getUserIdFromQuestion = (questionEntry: any): string | null => {
+  if (!questionEntry) return null;
+  // Xử lý cả 2 trường hợp:
+  // 1. 'user' là một object đầy đủ (khi đã populate)
+  if (
+    questionEntry.user &&
+    typeof questionEntry.user === "object" &&
+    questionEntry.user.id
+  ) {
+    return String(questionEntry.user.id);
+  }
+  // 2. 'user' chỉ là một ID
+  if (questionEntry.user && typeof questionEntry.user === "number") {
+    return String(questionEntry.user);
+  }
+  return null;
+};
+
 export default {
   async afterCreate(event: any) {
     const { data } = event.params;
-    // console.log("Dữ liệu (data) nhận được từ request:", data);
-
+    const { result } = event;
     const relationData = data.question;
     let questionId = null;
 
@@ -22,26 +42,102 @@ export default {
       questionId = relationData;
     }
 
-    // console.log("ID của Question được LIÊN KẾT THỰC SỰ là:", questionId);
+    if (!questionId) return; // Thoát nếu không có ID
+    // console.log(result)
+    if (!result.publishedAt) {
+      console.log(
+        `Hook 'afterCreate': Entry ${result.id} là DRAFT. Không gửi thông báo.`
+      );
+      return; // Dừng lại tại đây
+    }
 
-    if (questionId) {
-      try {
-        await strapi.entityService.update(
-          // @ts-ignore
-          "api::question.question",
-          questionId,
-          {
-            data: {
-              reqStatus: "Đã phản hồi",
-            },
-          }
-        );
-        // console.log(`--- CẬP NHẬT THÀNH CÔNG Question ID: ${questionId} ---`);
-      } catch (error) {
-        console.error("Lỗi khi tự động cập nhật trạng thái question:", error);
+    const firebaseAdmin = (strapi as any).firebase;
+    if (!firebaseAdmin) {
+      console.error("LỖI NGHIÊM TRỌNG: Firebase Admin SDK chưa được khởi tạo.");
+      return;
+    }
+
+    const firestoreDb = firebaseAdmin.firestore();
+
+    // --- BẮT ĐẦU NÂNG CẤP ---
+
+    let questionEntry = null;
+    let userId = null;
+
+    // --- BƯỚC A: Cập nhật Strapi DB VÀ LẤY THÔNG TIN USER ---
+    try {
+      // 1. LẤY thông tin question TRƯỚC KHI update
+      // !! QUAN TRỌNG: Chúng ta phải 'populate' để lấy được 'user'
+      questionEntry = await (strapi.entityService as any).findOne(
+        "api::question.question",
+        questionId,
+        { populate: ["user"] }
+      );
+
+      // 2. Lấy User ID
+      userId = getUserIdFromQuestion(questionEntry);
+
+      // 3. Cập nhật Strapi DB
+      await (strapi.entityService as any).update(
+        "api::question.question",
+        questionId,
+        { data: { reqStatus: "Đã phản hồi" } }
+      );
+    } catch (error) {
+      console.error(
+        `--- LỖI khi cập nhật Strapi DB cho Question ID: ${questionId} ---`,
+        error
+      );
+      return;
+    }
+
+    // --- BƯỚC B: Cập nhật Firestore (cho trang chi tiết) ---
+    try {
+      await firestoreDb
+        .collection("questions")
+        .doc(String(questionId))
+        .set({ status: "Đã phản hồi", answer: data.message }, { merge: true });
+    } catch (error) {
+      console.error(
+        `--- LỖI khi cập nhật Firestore 'questions' cho QID: ${questionId} ---`,
+        error
+      );
+    }
+
+    // --- BƯỚC C: Gửi FCM Push Notification (như cũ) ---
+    try {
+      if (questionEntry && questionEntry.fcmToken) {
       }
-    } else {
-      console.error("--- Không tìm thấy ID question để liên kết. ---");
+    } catch (error) {
+      console.error(`--- LỖI khi gửi FCM cho QID: ${questionId} ---`, error);
+    }
+
+    // --- BƯỚC D: [MỚI] Tạo Document Notification cho "Chuông" ---
+    if (userId) {
+      try {
+        const notifRef = firestoreDb
+          .collection("user_notifications")
+          .doc(userId)
+          .collection("notifications");
+
+        // const frontendUrl = "http://localhost:5173";
+
+        // Tạo document thông báo mới
+        await notifRef.add({
+          title: "Admin đã phản hồi câu hỏi của bạn, nhấn vào để xem ngay!",
+          link: `/questions`,
+          isRead: false,
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(
+          `--- TẠO (Firestore Notification) THÀNH CÔNG cho User ID: ${userId} ---`
+        );
+      } catch (error) {
+        console.error(
+          `--- LỖI khi tạo Firestore Notification cho User ID: ${userId} ---`,
+          error
+        );
+      }
     }
   },
 };

@@ -42,6 +42,15 @@
       "relation": "oneToOne",
       "target": "api::answer.answer",
       "mappedBy": "question"
+    },
+    "fcmToken": {
+      "type": "string"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "questions"
     }
   }
 }
