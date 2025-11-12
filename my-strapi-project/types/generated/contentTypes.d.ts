@@ -572,7 +572,10 @@ export interface ApiQuestionQuestion extends Struct.CollectionTypeSchema {
     phoneNumber: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     reqStatus: Schema.Attribute.Enumeration<
-      ['\u0110ang x\u1EED l\u00FD', '\u0110\u00E3 ph\u1EA3n h\u1ED3i']
+      [
+        '\u0110ang x\u1EED l\u00FD',
+        '\u0110\u00E3 \u0111\u01B0\u1EE3c ph\u1EA3n h\u1ED3i',
+      ]
     > &
       Schema.Attribute.DefaultTo<'\u0110ang x\u1EED l\u00FD'>;
     updatedAt: Schema.Attribute.DateTime;

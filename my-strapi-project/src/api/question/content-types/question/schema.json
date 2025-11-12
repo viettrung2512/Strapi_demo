@@ -27,7 +27,7 @@
       "default": "Đang xử lý",
       "enum": [
         "Đang xử lý",
-        "Đã phản hồi"
+        "Đã được phản hồi"
       ]
     },
     "message": {

@@ -42,13 +42,12 @@ export default {
       questionId = relationData;
     }
 
-    if (!questionId) return; // Thoát nếu không có ID
-    // console.log(result)
+    if (!questionId) return;
     if (!result.publishedAt) {
       console.log(
         `Hook 'afterCreate': Entry ${result.id} là DRAFT. Không gửi thông báo.`
       );
-      return; // Dừng lại tại đây
+      return;
     }
 
     const firebaseAdmin = (strapi as any).firebase;
@@ -81,7 +80,7 @@ export default {
       await (strapi.entityService as any).update(
         "api::question.question",
         questionId,
-        { data: { reqStatus: "Đã phản hồi" } }
+        { data: { reqStatus: "Đã được phản hồi" } }
       );
     } catch (error) {
       console.error(
@@ -90,13 +89,23 @@ export default {
       );
       return;
     }
+    const docId = questionEntry?.documentId;
+    if (!docId) {
+      console.error(
+        `--- LỖI: Không tìm thấy documentId cho Question ID: ${questionId} ---`
+      );
+      return;
+    }
 
     // --- BƯỚC B: Cập nhật Firestore (cho trang chi tiết) ---
     try {
       await firestoreDb
         .collection("questions")
-        .doc(String(questionId))
-        .set({ status: "Đã phản hồi", answer: data.message }, { merge: true });
+        .doc(String(docId))
+        .set(
+          { status: "Đã được phản hồi", answer: data.message },
+          { merge: true }
+        );
     } catch (error) {
       console.error(
         `--- LỖI khi cập nhật Firestore 'questions' cho QID: ${questionId} ---`,
@@ -107,6 +116,7 @@ export default {
     // --- BƯỚC C: Gửi FCM Push Notification (như cũ) ---
     try {
       if (questionEntry && questionEntry.fcmToken) {
+        
       }
     } catch (error) {
       console.error(`--- LỖI khi gửi FCM cho QID: ${questionId} ---`, error);
@@ -125,7 +135,8 @@ export default {
         // Tạo document thông báo mới
         await notifRef.add({
           title: "Admin đã phản hồi câu hỏi của bạn, nhấn vào để xem ngay!",
-          link: `/questions`,
+          link: `/questions/${docId}`,
+          questionId: docId,
           isRead: false,
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
